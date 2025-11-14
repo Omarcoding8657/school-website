@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+<style>
+  :root { --card-bg: #fff; --card-border: #222; --card-radius: 12px; }
+  button { padding: 10px 12px; border-radius: 5px; border: 1px solid #e5e7eb; cursor: pointer; color: #c8feff; background-color: #34b2c3; }
+  body {
+    font-family: 'Press Start 2P', cursive;
+    background-image: url('/static/images/gradient background.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    margin: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap:36px;
+    align-items:center;
+    padding-bottom:40px;
+  }
+
+  .game-card {
+    width: 92%;
+    max-width: 760px;
+    background: #134b6d;
+    border: 4px solid var(--card-border);
+    border-radius: var(--card-radius);
+    padding:18px;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.12);
+    text-align:center;
+  }
+
+  h2 { margin:6px 0 8px; font-size:18px; }
+  .meta-row { display:flex; justify-content:center; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+  .score { font-size:13px; }
+  .game-over { font-size:14px; color:#c62828; display:none; }
+
+  /* Responsive canvas: we use CSS size for layout and set internal resolution dynamically */
+  canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius:10px;
+    border:3px solid var(--card-border);
+    background:#eaeaea;
+    touch-action: manipulation; /* allow taps but prevent double-tap zoom on some browsers */
+  }
+
+  .btn {
+    font-family: 'Press Start 2P', cursive;
+    padding:8px 14px;
+    border:none;
+    border-radius:8px;
+    color: #c8feff; background-color: #34b2c3;
+    cursor:pointer;
+    font-size:11px;
+  }
+  .btn.secondary { background-color: #34b2c3 }
+  .instructions { font-size:10px; color: #c8feff; margin-top:6px; }
+
+  /* subtle focused canvas outline */
+  canvas:focus { outline: 3px solid rgba(0,0,0,0.12); }
+</style>
+</head>
+<body>
+
+  <button onclick="window.location.href='/'" style="font-family: 'Press Start 2P', cursive">
+    Main Page
+  </button>
+
+  <h6 style="font-family: 'Press Start 2P', cursive; color: #c8feff;">Dino Run and Flappy Bird made thanks to Logan</h6>
+
+  <!-- Dino Runner -->
+  <section class="game-card" id="dinoCard">
+    <h2>Dino Runner</h2>
+    <div class="meta-row">
+      <div class="score">Score: <span id="dinoScore">0</span></div>
+      <div class="game-over" id="dinoGameOver">GAME OVER</div>
+    </div>
+    <canvas id="dinoCanvas" width="640" height="260" tabindex="0" aria-label="Dino Runner game canvas"></canvas>
+    <div class="meta-row">
+      <button class="btn" id="dinoStart">Start</button>
+      <button class="btn secondary" id="dinoReset" style="display:none">Play Again</button>
+    </div>
+    <div class="instructions">Press SPACE or tap/click the canvas to jump. Canvas is focused when game starts.</div>
+  </section>
+
+  <!-- Flappy Bird -->
+  <section class="game-card" id="flappyCard">
+    <h2>Flappy Bird</h2>
+    <div class="meta-row">
+      <div class="score">Score: <span id="flappyScore">0</span></div>
+      <div class="game-over" id="flappyGameOver">GAME OVER</div>
+    </div>
+    <canvas id="flappyCanvas" width="520" height="420" tabindex="0" aria-label="Flappy Bird game canvas"></canvas>
+    <div class="meta-row">
+      <button class="btn" id="flappyStart">Start</button>
+      <button class="btn secondary" id="flappyReset" style="display:none">Play Again</button>
+    </div>
+    <div class="instructions">Press SPACE or tap/click the canvas to flap. Canvas is focused when game starts.</div>
+  </section>
+
+
+
+<script>
+/* --- Utilities: responsive canvas backing store & focus handling --- */
+function makeResponsiveCanvas(canvas) {
+  function resize() {
+    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+    // CSS size
+    const cssW = canvas.clientWidth;
+    const cssH = Math.round(canvas.width / canvas.width * canvas.clientHeight); // preserve aspect ratio visually
+    // Set backing store to CSS pixel size * DPR while keeping CSS size same
+    const w = Math.round(canvas.clientWidth * ratio);
+    // compute height maintaining original aspect ratio (canvas.width / canvas.height)
+    const aspect = canvas.width / canvas.height;
+    const h = Math.round(w / aspect);
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.height = (h / ratio) + 'px';
+    // keep the canvas element's CSS width as computed by layout (100%)
+  }
+  // initial resize
+  resize();
+  // on window resize debounce lightly
+  let t;
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(resize, 80); });
+  return resize;
+}
+
+/* Prevent page scroll on Space/ArrowUp when a game canvas is focused.
+   We'll check `document.activeElement` and only prevent when a canvas is focused.
+*/
+window.addEventListener('keydown', function(e) {
+  if ((e.code === 'Space' || e.code === 'ArrowUp') && document.activeElement && document.activeElement.tagName === 'CANVAS') {
+    e.preventDefault();
+  }
+});
+
+/* ---------------- DINO GAME ---------------- */
+(function(){
+  const canvasEl = document.getElementById('dinoCanvas');
+  const ctx = canvasEl.getContext('2d');
+  const startBtn = document.getElementById('dinoStart');
+  const resetBtn = document.getElementById('dinoReset');
+  const scoreEl = document.getElementById('dinoScore');
+  const gameOverEl = document.getElementById('dinoGameOver');
+
+  const resizeCanvas = makeResponsiveCanvas(canvasEl);
+
+  const BASE_WIDTH = 640, BASE_HEIGHT = 260;
+  const GRAVITY = 0.767;
+  const JUMP_V = -12.75;
+  const FLOOR_HEIGHT = 30;
+  const OBSTACLE_MIN_INTERVAL = 1000;
+  const OBSTACLE_MAX_INTERVAL = 1580;
+
+  let scale = 1;
+  function toCanvas(n){ return n * scale; }
+
+  let player, obstacles, score, running, lastTime, nextSpawnTime, crouching=false;
+  let obstacleCount = 0; // track obstacle sequence
+
+  function initState(){
+    scale = canvasEl.width / BASE_WIDTH;
+    player = {
+      w: toCanvas(22),
+      h: toCanvas(40),
+      x: toCanvas(56),
+      y: (canvasEl.height - toCanvas(FLOOR_HEIGHT)) - toCanvas(40),
+      vy: 0,
+      grounded: true,
+      baseH: toCanvas(50),
+      baseW: toCanvas(35)
+    };
+    obstacles = [];
+    score = 0;
+    obstacleCount = 0;
+    running = false;
+    lastTime = performance.now();
+    nextSpawnTime = performance.now() + randRange(OBSTACLE_MIN_INTERVAL, OBSTACLE_MAX_INTERVAL);
+    updateScoreUI();
+    gameOverEl.style.display = 'none';
+    resetBtn.style.display = 'none';
+    startBtn.style.display = 'inline-block';
+  }
+
+  function randRange(min,max){ return Math.random()*(max-min)+min; }
+
+  function spawnObstacle(){
+    obstacleCount++;
+    const isFlying = (obstacleCount % 5 === 0); // every 5th obstacle is flying
+
+    const obsWidth = isFlying ? randRange(28, 47.7) * 1.3 : randRange(28, 47.7); // flying blocks 1.3x wider
+    const obsHeight = isFlying ? toCanvas(100) : randRange(24, 45.6);
+
+    // flying blocks: fixed gap under for crouch
+    const obsY = isFlying
+        ? (canvasEl.height - toCanvas(FLOOR_HEIGHT) - player.baseH + toCanvas(5) - obsHeight)
+        : (canvasEl.height - toCanvas(FLOOR_HEIGHT) - obsHeight);
+
+    const obs = {
+      x: canvasEl.width + toCanvas(10),
+      w: obsWidth,
+      h: obsHeight,
+      y: obsY,
+      speed: toCanvas(5) + (score * 0.05)
+    };
+    obstacles.push(obs);
+}
+
+  function updatePhysics(dt){
+    // smooth crouch animation
+    const targetH = crouching ? player.baseH * 0.7 : player.baseH;
+    const targetW = crouching ? player.baseW * 1.7 : player.baseW;
+
+    // interpolate for smooth animation
+    player.h += (targetH - player.h) * 0.2;
+    player.w += (targetW - player.w) * 0.2;
+
+    if(player.grounded) player.y = canvasEl.height - toCanvas(FLOOR_HEIGHT) - player.h;
+
+    player.vy += GRAVITY * (dt*60);
+    player.y += player.vy * (dt*60);
+
+    const floorY = canvasEl.height - toCanvas(FLOOR_HEIGHT) - player.h;
+    if(player.y >= floorY){
+      player.y = floorY;
+      player.vy = 0;
+      player.grounded = true;
+    } else { player.grounded = false; }
+
+    for(let o of obstacles){ o.x -= o.speed*(dt*60); }
+
+    for(let i=obstacles.length-1;i>=0;i--){
+      const o = obstacles[i];
+      if(!o.passed && o.x + o.w < player.x){ o.passed=true; score+=1; updateScoreUI(); }
+      if(o.x + o.w < -10) obstacles.splice(i,1);
+    }
+
+    const now = performance.now();
+    if(now >= nextSpawnTime){
+      spawnObstacle();
+      nextSpawnTime = now + randRange(OBSTACLE_MIN_INTERVAL, OBSTACLE_MAX_INTERVAL) - Math.min(score*20,500);
+    }
+}
+
+  function detectCollision(){
+    for(let o of obstacles){
+      if(player.x < o.x + o.w &&
+         player.x + player.w > o.x &&
+         player.y < o.y + o.h &&
+         player.y + player.h > o.y){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // preload images
+const dinoImg = new Image();
+dinoImg.src = '/static/images/dino.png';
+const dinoCrouchImg = new Image();
+dinoCrouchImg.src = '/static/images/dino_crouch.png';
+
+function drawScene(){
+    ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+
+    // background
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0,0,canvasEl.width,canvasEl.height);
+
+    // floor
+    ctx.fillStyle = '#2e2e2e';
+    const fy = canvasEl.height - toCanvas(FLOOR_HEIGHT);
+    ctx.fillRect(0, fy, canvasEl.width, toCanvas(FLOOR_HEIGHT));
+
+    // player (dino)
+    const img = crouching ? dinoCrouchImg : dinoImg;
+    ctx.drawImage(img, Math.round(player.x), Math.round(player.y), Math.round(player.w), Math.round(player.h));
+
+    // obstacles
+    ctx.fillStyle = '#444';
+    for(let o of obstacles){
+        ctx.fillRect(Math.round(o.x), Math.round(o.y), Math.round(o.w), Math.round(o.h));
+    }
+}
+
+  function updateScoreUI(){ scoreEl.textContent = Math.max(0, score); }
+
+  function gameLoop(now){
+    if(!running) return;
+    const dt = Math.min(0.04,(now-lastTime)/1000);
+    lastTime=now;
+
+    updatePhysics(dt);
+
+    if(detectCollision()){
+      running=false;
+      gameOverEl.style.display='inline-block';
+      resetBtn.style.display='inline-block';
+      startBtn.style.display='none';
+      return;
+    }
+
+    drawScene();
+    requestAnimationFrame(gameLoop);
+  }
+
+  function jump(){
+    if(!running || crouching) return;
+    if(player.grounded || player.vy===0){
+      player.vy=JUMP_V*(1+Math.min(score/500,0.4));
+      player.grounded=false;
+    }
+  }
+
+  function onKeyDown(e){
+    if(e.code==='Space'||e.code==='ArrowUp'){ if(document.activeElement===canvasEl){ e.preventDefault(); jump(); } }
+    if(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyM'){ crouching=true; }
+  }
+
+  function onKeyUp(e){ if(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='KeyM'){ crouching=false; } }
+
+  function onPointerDown(e){ canvasEl.focus(); jump(); }
+
+  startBtn.addEventListener('click',()=>{
+    initState(); running=true; startBtn.style.display='none'; resetBtn.style.display='none';
+    canvasEl.focus(); lastTime=performance.now(); requestAnimationFrame(gameLoop);
+  });
+  resetBtn.addEventListener('click',()=>{ initState(); });
+
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('keyup', onKeyUp);
+  canvasEl.addEventListener('pointerdown', onPointerDown);
+
+  window.addEventListener('resize',()=>{
+    resizeCanvas();
+    running=false;
+    initState();
+  });
+
+  resizeCanvas();
+  initState();
+})();
+
+/* ------------------- FLAPPY GAME ------------------- */
+(function(){
+  // DOM
+  const canvasEl = document.getElementById('flappyCanvas');
+  const ctx = canvasEl.getContext('2d');
+  const startBtn = document.getElementById('flappyStart');
+  const resetBtn = document.getElementById('flappyReset');
+  const scoreEl = document.getElementById('flappyScore');
+  const gameOverEl = document.getElementById('flappyGameOver');
+
+  // responsive backing store
+  const resizeCanvas = makeResponsiveCanvas(canvasEl);
+
+  // design constants
+  const BASE_W = 520, BASE_H = 420;
+  const GRAVITY = 0.5;
+  const FLAP_V = -9.5;
+  const PIPE_WIDTH_DESIGN = 52;
+  const PIPE_GAP_DESIGN = 125;
+  const GROUND_HEIGHT_DESIGN = 40;
+
+  // runtime state
+  let scale = 1;
+  function toC(n){ return Math.round(n * scale); }
+
+  let bird, pipes, running, lastTime, score, spawnTimer, pipeGap, pipeW, groundH, gameSpeed;
+
+  function resetState() {
+    scale = canvasEl.width / BASE_W;
+    bird = {
+      x: toC(80),
+      y: toC(BASE_H/2),
+      w: toC(34),
+      h: toC(24),
+      vy: 0
+    };
+    pipeGap = toC(PIPE_GAP_DESIGN);
+    pipeW = toC(PIPE_WIDTH_DESIGN);
+    groundH = toC(GROUND_HEIGHT_DESIGN);
+    pipes = [];
+    score = 0;
+    gameSpeed = toC(2.77);
+    running = false;
+    lastTime = performance.now();
+    spawnTimer = performance.now() + 1300;
+    updateUI();
+    gameOverEl.style.display = 'none';
+    resetBtn.style.display = 'none';
+    startBtn.style.display = 'inline-block';
+  }
+
+  function spawnPipe() {
+    // calculate top height within a valid range (design units)
+    const minTop = toC(40);
+    const maxTop = canvasEl.height - groundH - pipeGap - toC(40);
+    const top = Math.floor(Math.random() * (maxTop - minTop + 1)) + minTop;
+    pipes.push({ x: canvasEl.width + toC(8), top: top, scored: false });
+  }
+
+  function updatePhysics(dt) {
+    // bird physics
+    bird.vy += GRAVITY * (dt * 60);
+    bird.y += bird.vy * (dt * 60);
+
+    // ground collision
+    const maxY = canvasEl.height - groundH - bird.h;
+    if (bird.y > maxY) {
+      bird.y = maxY;
+      bird.vy = 0;
+      running = false;
+      gameOverEl.style.display = 'inline-block';
+      resetBtn.style.display = 'inline-block';
+      startBtn.style.display = 'none';
+    }
+    if (bird.y < 0) {
+      bird.y = 0;
+      bird.vy = 0;
+    }
+
+    // pipes movement & collision/score
+    for (let p of pipes) {
+      p.x -= gameSpeed * (dt * 60);
+    }
+
+    for (let i = pipes.length - 1; i >= 0; i--) {
+      const p = pipes[i];
+      // remove offscreen
+      if (p.x + pipeW < -10) pipes.splice(i,1);
+      else {
+        // score
+        if (!p.scored && p.x + pipeW < bird.x) {
+          p.scored = true;
+          score++;
+          updateUI();
+          // speed increases slightly
+          gameSpeed = toC(2.77) + Math.min(Math.floor(score / 5), 6);
+        }
+        // collision
+        if (bird.x < p.x + pipeW &&
+            bird.x + bird.w > p.x &&
+            (bird.y < p.top || bird.y + bird.h > p.top + pipeGap)) {
+          // hit pipe
+          running = false;
+          gameOverEl.style.display = 'inline-block';
+          resetBtn.style.display = 'inline-block';
+          startBtn.style.display = 'none';
+        }
+      }
+    }
+
+    // spawn
+    const now = performance.now();
+    if (now >= spawnTimer && running) {
+      spawnPipe();
+      spawnTimer = now + 1500 - Math.min(score * 15, 500);
+    }
+  }
+
+  // preload bird
+const birdImg = new Image();
+birdImg.src = '/static/images/flappy_bird.png';
+
+function draw() {
+    ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+
+    // sky
+    ctx.fillStyle = '#7ec8f5';
+    ctx.fillRect(0,0,canvasEl.width,canvasEl.height);
+
+    // pipes
+    ctx.fillStyle = '#2b8a2b';
+    for (let p of pipes) {
+        ctx.fillRect(Math.round(p.x), 0, pipeW, Math.round(p.top));
+        ctx.fillRect(Math.round(p.x), Math.round(p.top + pipeGap), pipeW, canvasEl.height - Math.round(p.top + pipeGap) - groundH);
+    }
+
+    // ground
+    ctx.fillStyle = '#d2b48c';
+    ctx.fillRect(0, canvasEl.height - groundH, canvasEl.width, groundH);
+
+    // bird
+    ctx.drawImage(birdImg, Math.round(bird.x), Math.round(bird.y), Math.round(bird.w), Math.round(bird.h));
+}
+
+  function updateUI() { scoreEl.textContent = Math.max(0, score); }
+
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min(0.04, (now - lastTime) / 1000);
+    lastTime = now;
+
+    updatePhysics(dt);
+
+    draw();
+
+    if (running) requestAnimationFrame(loop);
+  }
+
+  function flap() {
+    if (!running) return;
+    bird.vy = FLAP_V;
+  }
+
+  // input handlers
+  function onKeyDown(e) {
+    if ((e.code === 'Space' || e.code === 'ArrowUp') && document.activeElement === canvasEl) {
+      e.preventDefault();
+      flap();
+    }
+  }
+  function onPointerDown(e) { canvasEl.focus(); flap(); }
+
+  // start/reset
+  startBtn.addEventListener('click', () => {
+    resetState();
+    running = true;
+    startBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
+    canvasEl.focus();
+    lastTime = performance.now();
+    requestAnimationFrame(loop);
+  });
+  resetBtn.addEventListener('click', () => { resetState(); });
+
+  // wire up events
+  window.addEventListener('keydown', onKeyDown);
+  canvasEl.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    // stop and reset to avoid odd states
+    running = false;
+    resetState();
+  });
+
+  // initial
+  resizeCanvas();
+  resetState();
+})();
+
+</script>

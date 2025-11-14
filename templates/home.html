@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <title>about.blank</title>
+  <style>
+    /* --- existing styles (unchanged) --- */
+    :root { --pink: #48d4c8; --muted:#6b7280; }
+    body { color: #c8feff; background-image: url('/static/images/gradient background.png'); background-repeat: no-repeat; background-size: cover; background-position: center; font-family: 'Arial', serif; font-weight: 600; margin: 0; padding: 0; position: relative; min-height: 100vh; background-color: #fff; overflow-x: hidden; display: flex; flex-direction: column; }
+    .wrap { position: relative; width: 100%; height: 100vh; max-width: 200000px; margin: 0 auto; }
+    h1 { margin: 0 0 12px; }
+    h2 { font-family: Helvetica, sans-serif; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    button, input { padding: 10px 12px; border-radius: 7px; border: 1px solid #e5e7eb; font-size: 14px; font-family: 'Press Start 2P', cursive; }
+    button { cursor: pointer; color: #c8feff; background-color: #34b2c3;}
+    .text { color: #b91c1c; margin-top: 6px; font-size: 16px; font-weight: 600; }
+    .card { margin-top: 16px; background: #134b6d; border: 1px solid #e5e7eb; border-radius: 16px; padding: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .muted { color: var(--muted); margin: 0 0 6px; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: var(--pink); margin-right: 8px; margin-bottom: 8px; }
+    .dot { display:inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #ddd; vertical-align: middle; margin-right: 6px; }
+    img { max-width: 100%; border-radius: 12px; margin-top: 8px; display:none; }
+    .ok { color: #065f46; }
+    .responsive-text { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); font-size: clamp(24px, 6vw, 80px); text-align: center; line-height: 1; margin: 0; width: 1100px; word-wrap: break-word; }
+    .patch-notes { position: absolute; top: 180px; left: 63%; margin: 20px 200px; width: 480px; height: 540px; transform: translateX(-50%); text-align: center; font-size: clamp(30px, 2vw, 36px); border-radius: 16px !important; overflow-y: auto; }
+    .patch-notes ul { list-style-position: inside; display: inline-block; text-align: left; padding: 0; margin: 0 auto; }
+    .patch-notes li, .patch-notes p { margin: 0; padding: 0; font-size: 24px; }
+    .information { position: absolute; top: 185px; left: clamp(6%, 2vw, 13%); width: clamp(425px, 100vw, 725px); height: 100px; text-align: center; padding: 15px 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
+    .info-display { position: absolute; top: 140px; left: 0%; width: 745px; height: 380px; overflow-x: hidden; }
+    .info-input_name { display: flex; gap: 10px; }
+    .photo { margin: 50px 0px 40px; position: absolute; top: 15%; left: 50px; text-align: center; }
+    .name { position: absolute; top: 45px; left: 43%; text-align: center; }
+    .gen-info { color: white !important; margin: 110px 0px 40px; position: absolute; top: 15%; right: 50px; text-align: justify !important; }
+    .navigation { display: flex; flex-direction: row; }
+    .top-bar { position: fixed; top: 0; left: 0; width: 100%; background: #134b6d; color: white; padding: 15px; text-align: center; z-index: 1000; }
+    .content { margin-top: 70px; /* prevents content from hiding under the top bar */ padding: 20px; }
+
+    /* --- fixed popup styling --- */
+    #signupPopup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color:#19749b;
+      font-family: 'Press start 2p', cursive;
+    }
+    #signupPopup .popup-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      width: 400px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+    }
+    #signupPopup input { width: 90%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
+    #signupPopup button { padding: 10px 20px; background: #19749b; color: white; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; }
+    #signupPopup button:hover { background: #1f395d; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <h1 style="font-family: 'Press Start 2P', cursive; font-size: clamp(24px, 6vw, 55px); font-weight: 250;">Ultima Unblocker</h1>
+    <h4>Social update in about 2 weeks sorry :(</h4>
+    <div class="navigation">
+      <h2 style="margin: 10px 30px; font-size: clamp(12px, 6vw, 26px); font-family: 'Press Start 2P', cursive;">-- Navigation --</h2>
+      <div class="buttons">
+        <button onclick="window.location.href='/game'">
+          Games
+        </button>
+        <button onclick="window.location.href='/api'">
+          API(Authorized Only)
+        </button>
+        <button onclick="window.open('https://docs.google.com/forms/d/1k864kpb3DMIkzhWDzEPs8mmUNOMCNW9EnRDXt7NiMuA', '_blank')">
+          Update form
+        </button>
+        <button onclick="window.open('https://nuggetdino.willstrang.com/', '_blank')">
+          Unblocker
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="patch-notes card">
+      <h2 style="margin-bottom: 25px; font-size: clamp(12px, 6vw, 26px); font-family: 'Press Start 2P', cursive;">-- Patch Notes --</h2>
+      <ul>
+        <p>10/14/25</p>
+        <li>Experimental <span style="color: red; margin-left: 6px;">Release</span></li>
+        <li>Added Games</li>
+        <li style="padding-bottom: 20px;">Improved page design</li>
+        <p>10/19/25</p>
+        <li>Positioned everything</li>
+        <li style="padding-bottom: 20px;">Added style to main sections</li>
+        <p>10/22/25</p>
+        <li style="padding-bottom: 20px;">Added <span style="color: #27D3F5; margin-left: 6px;">Unblocker button</span></li>
+        <p>10/23/25</p>
+        <li style="padding-bottom: 20px;">Tweaked positions</li>
+        <p>10/30/25</p>
+        <li style="padding-bottom: 20px;"><span style="background: linear-gradient(120deg, #ff5252, #ff9e61, #ffea70, #7dff97, #8ab3ff, #ff94fa); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-left: 6px; font-family: 'Press Start 2P', cursive; ">BIG UPDATE</span></li>
+      </ul>
+    </div>
+
+    <div class="information card">
+      <div1 style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; justify-content: center; align-content: center; padding-left: 20px">
+      <div class="row">
+        <div class="row info-rand">
+          <button id="btnRandom" style="width: 280px">Get Random Person</button>
+        </div>
+
+        <div class="info-num">
+          <button id="btnCount" style="width: 280px">Get # of People</button>
+        </div>
+      </div>
+
+      <div1 class="row">
+        <div class="info-input_name">
+          <input id="nameInput" type="text" placeholder="Find by name" style="font-family: 'Arial', sans-serif; width: 154px;">
+          <button id="btnByName" style="width: 170px;">Name</button>
+        </div>
+
+        <div style="height: 8px"></div>
+
+        <div id="info-input" style="display: flex; justify-content: center; ">
+            <input id="idInput" style="font-family: 'Arial', sans-serif; width: 154px" placeholder="Enter person ID (ex:1)" inputmode="numeric" />
+            <button id="btnById" style="width: 170px; height: 40px; margin-left: 6px; ">Get by ID</button>
+      </div1>
+      </div1>
+          <div id="idError" class="text info-display card" style="display: none; color: #b91c1c; z-index: 2; display: flex; align-items: center; justify-content: center;"></div>
+        </div>
+          <div id="student-count" class="text" style="color: #c8feff;"></div>
+
+        <div class="card info-display" id="out" style="display: none; font-family: 'Verdana', serif; font-weight: 150; z-index: 3; ">
+          <div class="row name">
+            <span class="dot" id="colorDot"></span>
+            <h2 id="name">Name</h2>
+          </div>
+          <div class="info">
+            <div class="gen-info">
+              <p class="muted" id="city">City: N/A</p>
+              <p class="muted" id="age">Age: N/A</p>
+              <p class="muted" id="email">Email: N/A</p>
+              <p class="muted" id="dob">DOB: N/A</p>
+              <p class="muted" id="image" style="display: none;">Image: —</p>
+              <h3>Hobbies</h3>
+              <div id="hobbies"></div>
+            </div>
+            <div class="photo">
+              <h4>User Image</h4>
+              <img style="border: 5px solid #000000;"id="photo" alt="student image" />
+            </div>
+          </div>
+          <p id="status" class="muted status"></p>
+        </div>
+        <div class="text info-display card" style="display: none; color: #b91c1c; z-index: 2; display: flex; align-items: center; justify-content: center;"></div>
+    </div>
+
+        <!-- Sign-up Popup -->
+  <div id="signupPopup">
+    <div class="popup-content">
+      <h3>Sign Up</h3>
+      <input type="text" id="signupName" placeholder="Name"><br>
+      <input type="email" id="signupEmail" placeholder="Email"><br>
+      <input type="number" id="signupAge" placeholder="Age"><br>
+      <input type="text" id="signupDOB" placeholder="DOB (MM/DD/YYYY)"><br>
+      <input type="text" id="signupImage" placeholder="Image (copy/paste image address)"><br>
+      <input type="text" id="signupCity" placeholder="City"><br>
+      <input type="text" id="signupColor" placeholder="Favorite Color"><br>
+      <input type="text" id="signupHobbies" placeholder="Hobbies (comma separated)"><br>
+      <button id="signupBtn">Sign Up</button>
+    </div>
+  </div>
+
+<script>
+// --- SIGN-UP POPUP LOGIC ---
+document.addEventListener('DOMContentLoaded', () => {
+  const popup = document.getElementById('signupPopup');
+  if (!localStorage.getItem('signedUp')) popup.style.display = 'flex';
+
+  document.getElementById('signupBtn').addEventListener('click', async () => {
+    const name = signupName.value.trim();
+    const email = signupEmail.value.trim();
+    const age = signupAge.value.trim();
+    const dob = signupDOB.value.trim();
+    const image = signupImage.value.trim();
+    const city = signupCity.value.trim();
+    const favorite_color = signupColor.value.trim();
+    const hobbies = signupHobbies.value.split(',').map(h => h.trim());
+
+    if (!name || !email) return alert('Please fill out name and email.');
+
+    const res = await fetch('/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, email, age, dob, city, favorite_color, image, hobbies})
+    });
+
+    if (res.ok) {
+      popup.style.display = 'none';
+      localStorage.setItem('signedUp', 'true');
+      alert('Sign-up successful!');
+    } else {
+      alert('Sign-up failed.');
+    }
+  });
+});
+
+// --- DISPLAY STUDENT DATA ---
+function showStudent(student) {
+  if (!student) return;
+  document.getElementById('out').style.display = 'block';
+  document.getElementById('name').textContent = student.name || 'Unknown';
+  document.getElementById('city').textContent = 'City: ' + (student.city || 'N/A');
+  document.getElementById('age').textContent = 'Age: ' + (student.age || 'N/A');
+  document.getElementById('email').textContent = 'Email: ' + (student.email || 'N/A');
+  document.getElementById('dob').textContent = 'DOB: ' + (student.dob || 'N/A');
+  document.getElementById('image').textContent = 'Image: ' + (student.image || '—');
+  document.getElementById('hobbies').innerHTML = student.hobbies ? student.hobbies.map(h => `<span class='tag'>${h}</span>`).join('') : '';
+  document.getElementById('photo').style.display = 'block';
+  document.getElementById('photo').src = student.image || 'https://via.placeholder.com/160';
+  document.getElementById('colorDot').style.background = student.favorite_color || '#000';
+}
+
+// --- BUTTON LOGIC ---
+document.getElementById('btnRandom').addEventListener('click', async () => {
+  const res = await fetch('/api/random_student?_=' + Date.now());
+  if (!res.ok) return alert('No students found.');
+  const data = await res.json();
+  showStudent(data);
+});
+
+document.getElementById('btnById').addEventListener('click', async () => {
+  const id = document.getElementById('idInput').value.trim();
+  if (!id) return alert('Please enter an ID.');
+  const res = await fetch(`/api/student/${id}?_=` + Date.now());
+  if (res.ok) {
+    const data = await res.json();
+    showStudent(data);
+  } else {
+    alert('Student not found.');
+  }
+});
+
+document.getElementById('btnByName').addEventListener('click', async () => {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name) return alert('Please enter a name.');
+
+  try {
+    const res = await fetch(`/api/student_by_name/${encodeURIComponent(name)}?_=` + Date.now());
+    const data = await res.json();
+    console.log('Find by Name response:', data); // ✅ Debug log
+
+    if (!res.ok || data.error) {
+      alert('Student not found.');
+      return;
+    }
+
+    // ✅ Call the same display function used by your random/id lookups
+    showStudent(data);
+  } catch (err) {
+    console.error(err);
+    alert('Error contacting server.');
+  }
+});
+
+document.getElementById('btnCount').addEventListener('click', async () => {
+  const res = await fetch('/api/count?_=' + Date.now());
+  const count = await res.json();
+  document.getElementById('student-count').textContent = 'Number of Students: ' + count;
+});
+
+async function deleteStudent(id) {
+  if (!confirm("Are you sure you want to delete this student?")) return;
+
+  const res = await fetch(`/api/delete_student/${id}`, { method: "DELETE" });
+  const data = await res.json();
+
+  if (res.ok) {
+    alert(`${data.deleted.name} has been deleted.`);
+
+    // ✅ Clear local storage or cookies if you store the current user
+    localStorage.removeItem("currentUser");
+
+    // ✅ Re-show signup popup
+    showSignupPopup();
+  } else {
+    alert(data.message || "Error deleting student.");
+  }
+}
+
+function showSignupPopup() {
+  document.getElementById("signup-popup").style.display = "block";
+}
+
+function hideSignupPopup() {
+  document.getElementById("signup-popup").style.display = "none";
+}
+
+</script>
+</body>
+</html>
