@@ -8,7 +8,7 @@ from datetime import datetime
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins='*', async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins='*')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STUDENTS_FILE = os.path.join(BASE_DIR, "students.json")
@@ -45,11 +45,15 @@ def allow_cors(resp):
 # ---------------------- Web Pages ----------------------
 @app.route("/")
 def home():
-    return render_template("home.html")
+    return render_template("index.html")
 
 @app.route("/game")
 def game():
-    return render_template("games.html")
+    return render_template("game.html")
+
+@app.route("/api/engine")
+def engine():
+    return render_template("game_engine.html")
 
 @app.route("/chat")
 def chat_page():
@@ -191,6 +195,11 @@ def handle_join(data):
     emit('user_count', {
         'count': len(active_users)
     }, broadcast=True)
+    
+    # Send current user list to the joining user
+    emit('user_list', {
+        'users': list(active_users.values())
+    })
 
 @socketio.on('message')
 def handle_message(data):
@@ -202,6 +211,12 @@ def handle_message(data):
         'message': data['message'],
         'timestamp': timestamp
     }, room='chat', broadcast=True)
+
+@socketio.on('heartbeat')
+def handle_heartbeat():
+    # Keep connection alive
+    if request.sid in active_users:
+        emit('heartbeat_ack')
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -217,4 +232,5 @@ def handle_disconnect():
 
 # ---------------------- Run Server ----------------------
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
